@@ -13,7 +13,7 @@ contract Ahab is ERC20, AccessControl, ReentrancyGuard {
     bytes32 public constant HEALER_ROLE = keccak256("HEALER_ROLE");
     address public creator;
     uint public constant PRECISION = 100;
-    mapping(address => uint) public numPlayers;
+    mapping(address => mapping(uint => uint)) public initialValue; // stores initial value of deposited players
     Royale public constant ROYALE = Royale(0x8e094bC850929ceD3B4280Cc031540A897F39706);
 
     constructor() ERC20("AHAB", "AHA") {
@@ -38,18 +38,22 @@ contract Ahab is ERC20, AccessControl, ReentrancyGuard {
     function enter(uint player) public nonReentrant {
         uint value = valuation(player);
         ROYALE.transferFrom(msg.sender, address(this), player);
-        numPlayers[msg.sender]++;
+        initialValue[msg.sender][player] = value; // stores initial value of player
         _mint(msg.sender, value*10**decimals());
     }
 
     // receive erc20 from msg sender and send erc721 of less or equal value
-    // send the worst players in the DAO to the msg.sender
-    // take senders all AHA tokens and send them number of BRP tokens they minted
-    // the current valuation of AHA tokens burnt should be greater than the valuation of BRP tokens sent back 
+    // a sender can claim only their player 
+    // the currentValue of the player should be less than equal to initialValue
     function exit(uint player) public nonReentrant {
-        uint value = valuation(player);
-        // burn will make sure that player has more than current value of tokens
-        _burn(msg.sender, value*10**decimals());
+        uint initValue = initialValue[msg.sender][player];
+        require(initValue != 0, "initial value cannot be zero");
+        uint currentValue = valuation(player);
+        require(currentValue <= initValue, "initial value should be more than equal to current value");
+        // burn initial value
+        _burn(msg.sender, initValue*10**decimals());
+        initialValue[msg.sender][player] = 0;
+        // transfer player to sender
         ROYALE.transferFrom(address(this), msg.sender, player);
     }
 
@@ -62,8 +66,8 @@ contract Ahab is ERC20, AccessControl, ReentrancyGuard {
         require(attackPlayers.length == attackAP.length, "Lengths mismatch");
         // need to handle multiple players
         for (uint x; x < attackPlayers.length; x++) {
-            // need to make sure that we can handle reverts in here
-            ROYALE.attack(attackPlayers[x], player, attackAP[x]);
+            // need to handle reverts since our player can be killed by the time this is included
+            try ROYALE.attack(attackPlayers[x], player, attackAP[x]) {} catch {}
         }
     }
 
