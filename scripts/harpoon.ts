@@ -17,10 +17,10 @@ async function main(): Promise<void> {
   console.log(`Account balance: ${balance.toString()}`);
 
   /*
-  const ahab = await ethers.getContractFactory("Ahab");
-  const contract = await ahab.deploy();
+  const harpoon = await ethers.getContractFactory("Harpoon");
+  const contract = await harpoon.deploy();
   await contract.deployed();
-  console.log(`Ahab address: ${contract.address}`);
+  console.log(`Harpoon address: ${contract.address}`);
   */
 }
 
