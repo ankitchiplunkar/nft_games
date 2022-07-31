@@ -7,16 +7,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
-contract Ahab is ERC20, AccessControl, ReentrancyGuard {
+contract Harpoon is ERC20, AccessControl, ReentrancyGuard {
 
     bytes32 public constant KILLER_ROLE = keccak256("KILLER_ROLE");
     bytes32 public constant HEALER_ROLE = keccak256("HEALER_ROLE");
     address public creator;
     uint public constant PRECISION = 100;
-    mapping(address => mapping(uint => uint)) public initialValue; // stores initial value of deposited players
     Royale public constant ROYALE = Royale(0x8e094bC850929ceD3B4280Cc031540A897F39706);
 
-    constructor() ERC20("AHAB", "AHA") {
+    constructor() ERC20("Harpoon", "HARP") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(KILLER_ROLE, msg.sender);
         _setupRole(HEALER_ROLE, msg.sender);
@@ -38,23 +37,7 @@ contract Ahab is ERC20, AccessControl, ReentrancyGuard {
     function enter(uint player) public nonReentrant {
         uint value = valuation(player);
         ROYALE.transferFrom(msg.sender, address(this), player);
-        initialValue[msg.sender][player] = value; // stores initial value of player
         _mint(msg.sender, value*10**decimals());
-    }
-
-    // receive erc20 from msg sender and send erc721 of less or equal value
-    // a sender can claim only their player 
-    // the currentValue of the player should be less than equal to initialValue
-    function exit(uint player) public nonReentrant {
-        uint initValue = initialValue[msg.sender][player];
-        require(initValue != 0, "initial value cannot be zero");
-        uint currentValue = valuation(player);
-        require(currentValue <= initValue, "initial value should be more than equal to current value");
-        // burn initial value
-        _burn(msg.sender, initValue*10**decimals());
-        initialValue[msg.sender][player] = 0;
-        // transfer player to sender
-        ROYALE.transferFrom(address(this), msg.sender, player);
     }
 
     // harms another player using an array of attack players and their APs
